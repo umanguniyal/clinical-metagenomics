@@ -1,0 +1,4 @@
+name: base_utils
+channels: [conda-forge, bioconda]
+dependencies:
+  - python=3.11

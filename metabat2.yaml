@@ -1,0 +1,4 @@
+name: metabat2
+channels: [conda-forge, bioconda]
+dependencies:
+  - metabat2
