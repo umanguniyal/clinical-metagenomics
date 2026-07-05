@@ -1,6 +1,0 @@
-name: amr_contigs
-channels: [conda-forge, bioconda]
-dependencies:
-  - python=3.11
-  - abricate
-  - ncbi-amrfinderplus
