@@ -1,4 +1,0 @@
-name: bin_amr
-channels: [conda-forge, bioconda]
-dependencies:
-  - python=3.11
