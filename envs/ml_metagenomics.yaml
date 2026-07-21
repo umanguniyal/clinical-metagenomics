@@ -1,0 +1,16 @@
+name: ml_metagenomics
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - scikit-learn>=1.3
+  - matplotlib
+  - seaborn
+  - jinja2
+  - weasyprint
+  - pip:
+      - xgboost  # optional; only used if --model xgboost is passed

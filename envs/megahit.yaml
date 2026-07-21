@@ -1,0 +1,4 @@
+name: megahit
+channels: [conda-forge, bioconda]
+dependencies:
+  - megahit

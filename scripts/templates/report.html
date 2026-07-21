@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Metagenomics Report — {{ sample_id }}</title>
+<style>
+  @page { size: A4; margin: 1.8cm 1.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; line-height: 1.4; }
+
+  /* ─── Header ─── */
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #003366; padding-bottom: 10px; margin-bottom: 14px; }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo-box { width: 50px; height: 50px; background: #003366; color: #fff; font-weight: 700; font-size: 9pt; display: flex; align-items: center; justify-content: center; border-radius: 4px; text-align: center; line-height: 1.1; }
+  .header-left-text { font-size: 8pt; color: #555; line-height: 1.25; }
+  .report-title { font-size: 16pt; font-weight: 700; color: #003366; text-align: center; flex: 1; }
+  .header-right { text-align: right; font-size: 8pt; line-height: 1.3; }
+  .header-right .nhs-tag { font-size: 12pt; font-weight: 700; color: #003366; }
+  .header-right .trust-name { color: #555; }
+
+  /* ─── Sections ─── */
+  .section { margin-bottom: 16px; }
+  .section-title { font-size: 13pt; font-weight: 700; color: #222; margin-bottom: 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+
+  /* ─── Info table (Patient / QC) ─── */
+  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; table-layout: fixed; }
+  .info-table td { padding: 3px 8px; font-size: 9.5pt; vertical-align: top; word-break: break-word; }
+  .info-table tr:nth-child(even) { background: #f4f4f4; }
+  .info-table .label { font-weight: 600; color: #333; width: 22%; }
+  .info-table .value { color: #111; width: 28%; }
+
+  /* ─── Data table (Taxonomy / AMR / ML) ─── */
+  .data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; table-layout: fixed; page-break-inside: auto; }
+  .data-table tr { page-break-inside: avoid; page-break-after: auto; }
+  .data-table th { text-align: left; font-weight: 700; font-size: 9pt; padding: 5px 8px; border-bottom: 2px solid #888; background: #f0f0f0; }
+  .data-table td { padding: 4px 8px; font-size: 9pt; border-bottom: 1px solid #e0e0e0; word-break: break-word; overflow-wrap: break-word; hyphens: auto; }
+  .data-table tr:nth-child(even) td { background: #fafafa; }
+  .data-table .organism-name { font-style: italic; }
+
+  /* ─── Compact Binned AMR table ─── */
+  .bin-amr-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; table-layout: fixed; font-size: 7.5pt; page-break-inside: auto; }
+  .bin-amr-table tr { page-break-inside: avoid; page-break-after: auto; }
+  .bin-amr-table th { text-align: left; font-weight: 700; font-size: 7.5pt; padding: 3px 4px; border-bottom: 2px solid #888; background: #f0f0f0; white-space: nowrap; overflow: hidden; }
+  .bin-amr-table td { padding: 2px 4px; border-bottom: 1px solid #e8e8e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bin-amr-table tr:nth-child(even) td { background: #fafafa; }
+  .bin-amr-table .organism-name { font-style: italic; }
+  .bin-amr-table .hc-yes { color: #27ae60; font-weight: 700; }
+  .bin-amr-table .hc-no  { color: #aaa; }
+  .bin-amr-table col.c-gene     { width: 11%; }
+  .bin-amr-table col.c-bin      { width: 9%;  }
+  .bin-amr-table col.c-organism { width: 20%; }
+  .bin-amr-table col.c-resist   { width: 22%; }
+  .bin-amr-table col.c-id       { width: 6%;  }
+  .bin-amr-table col.c-cov      { width: 6%;  }
+  .bin-amr-table col.c-comp     { width: 7%;  }
+  .bin-amr-table col.c-contam   { width: 7%;  }
+  .bin-amr-table col.c-src      { width: 9%;  }
+  .bin-amr-table col.c-hc       { width: 3%;  }
+
+  /* ─── Indicator dots ─── */
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+  .dot-green  { background: #27ae60; }
+  .dot-yellow { background: #f39c12; }
+  .dot-red    { background: #e74c3c; }
+  .dot-grey   { background: #bbb; }
+
+  /* ─── Warnings ─── */
+  .warning-box { background: #fff3cd; border-left: 4px solid #f39c12; padding: 6px 10px; font-size: 9pt; margin-bottom: 8px; }
+
+  /* ─── Page break ─── */
+  .page-break { page-break-before: always; }
+
+  /* ─── Footer ─── */
+  .footer { font-size: 7.5pt; color: #999; text-align: center; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ HEADER ════════════════════ -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-left-text">Metagenomics Diagnostics<br>Clinical Pipeline</div>
+  </div>
+  <div class="report-title">Metagenomics Report</div>
+  <div class="header-right">
+    <div class="trust-name">Automated Analysis Report</div>
+  </div>
+</div>
+
+<!-- ════════════════════ PATIENT ════════════════════ -->
+<div class="section">
+  <div class="section-title">Patient</div>
+  <table class="info-table">
+    <tr>
+      <td class="label">Lab/sample ID</td><td class="value">{{ sample_id }}</td>
+      <td class="label">Date, Time</td><td class="value">{{ generated_at }}</td>
+    </tr>
+    <tr>
+      <td class="label">Pipeline version</td><td class="value">{{ pipeline_version }}</td>
+      <td class="label">Platform</td><td class="value">{{ platform }}</td>
+    </tr>
+    <tr>
+      <td class="label">Profile</td><td class="value">{{ profile }}</td>
+      <td class="label">AMR mode</td><td class="value">{{ amr_mode }}</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ════════════════════ QUALITY CONTROL ════════════════════ -->
+<div class="section">
+  <div class="section-title">Quality Control</div>
+  <table class="info-table">
+    <tr>
+      <td class="label">Mean coverage</td><td class="value">{{ "%.1f"|format(mean_coverage) }}x</td>
+      <td class="label">AMR decision mode</td><td class="value">{{ amr_mode }}</td>
+    </tr>
+    {% if assembly %}
+    <tr>
+      <td class="label">Total contigs</td><td class="value">{{ assembly.get("# contigs", "N/A") }}</td>
+      <td class="label">Total length</td><td class="value">{{ assembly.get("Total length", "N/A") }}</td>
+    </tr>
+    <tr>
+      <td class="label">N50</td><td class="value">{{ assembly.get("N50", "N/A") }}</td>
+      <td class="label">GC (%)</td><td class="value">{{ assembly.get("GC (%)", "N/A") }}</td>
+    </tr>
+    {% endif %}
+    {% if host_removal %}
+    <tr>
+      <td class="label">Host reads removed</td><td class="value">{{ host_removal.human_reads_removed }}</td>
+      <td class="label">Host (%)</td><td class="value">{{ host_removal.human_percent }}%</td>
+    </tr>
+    <tr>
+      <td class="label">Total non-host reads</td><td class="value">{{ host_removal.total_reads_after }}</td>
+      <td class="label"></td><td class="value"></td>
+    </tr>
+    {% endif %}
+  </table>
+</div>
+
+<!-- ════════════════════ ML PATHOGEN PREDICTION ════════════════════ -->
+{% if ml_results and ml_results.top_pathogens %}
+<div class="section">
+  <div class="section-title">ML Pathogen Threat Prediction (Random Forest)</div>
+  <table class="data-table">
+    <colgroup>
+      <col style="width: 40%;">
+      <col style="width: 20%;">
+      <col style="width: 40%;">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Predicted Pathogen</th>
+        <th>Threat Score (0-1)</th>
+        <th>AMR Genes Detected</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in ml_results.top_pathogens %}
+      <tr>
+        <td class="organism-name" style="font-weight: 700; color: #c0392b;">{{ p.organism }}</td>
+        <td><b>{{ "%.2f"|format(p.pathogen_score) }}</b></td>
+        <td>{% if p.amr_gene_names %}{{ p.amr_gene_names }}{% else %}None{% endif %} <span style="color:#777;">(n={{ p.n_amr_genes }})</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ════════════════════ TAXONOMY — MERGED ════════════════════ -->
+<div class="section">
+  <div class="section-title">Taxonomic Classification — Kraken2 and Centrifuge</div>
+  {% if merged_taxonomy %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Organism</th>
+        <th>Kraken2 Abundance</th>
+        <th>Centrifuge Abundance</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for sp in merged_taxonomy %}
+      <tr>
+        <td class="organism-name">{{ sp.name }}</td>
+        <td>{% if sp.k_pct %}{{ "%.2f"|format(sp.k_pct) }}%{% else %}—{% endif %}</td>
+        <td>{% if sp.c_pct %}{{ "%.2f"|format(sp.c_pct) }}%{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No species detected above reporting threshold.</p>
+  {% endif %}
+</div>
+
+<!-- ════════════════════ AMR SUMMARY ════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">Antimicrobial Resistance Summary</div>
+  
+  {% if merged_amr and merged_amr.common %}
+  <p style="font-weight: bold; margin-bottom: 4px; font-size: 9.5pt;">Detected by BOTH AMRFinder and ABRicate:</p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Gene</th><th>Resistance Class</th><th>Hits (n)</th><th>Median Cov (%)</th><th>ABRicate (Id/Cov)</th><th>AMRFinder (Id/Cov)</th></tr>
+    </thead>
+    <tbody>
+    {% for g in merged_amr.common %}
+      <tr>
+        <td>{{ g.gene }}</td>
+        <td>{{ g.resistance or "—" }}</td>
+        <td>{{ g.count }}</td>
+        <td>{{ "%.1f"|format(g.median_coverage) }}</td>
+        <td>{{ "%.1f"|format(g.ab_identity) }}% / {{ "%.1f"|format(g.ab_coverage) }}%</td>
+        <td>{{ "%.1f"|format(g.amr_identity) }}% / {{ "%.1f"|format(g.amr_coverage) }}%</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if merged_amr and merged_amr.disjoint %}
+  <p style="font-weight: bold; margin-bottom: 4px; margin-top: 8px; font-size: 9.5pt;">Detected by ONE Tool Only:</p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Gene</th><th>Resistance Class</th><th>Hits (n)</th><th>Source Tool</th><th>Identity (%)</th><th>Coverage (%)</th></tr>
+    </thead>
+    <tbody>
+    {% for g in merged_amr.disjoint %}
+      <tr>
+        <td>{{ g.gene }}</td>
+        <td>{{ g.resistance or "—" }}</td>
+        <td>{{ g.count }}</td>
+        <td>{{ g.source }}</td>
+        <td>{{ "%.1f"|format(g.identity) }}</td>
+        <td>{{ "%.1f"|format(g.coverage) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if not merged_amr or (not merged_amr.common and not merged_amr.disjoint) %}
+  <table class="data-table">
+    <thead><tr><th>Species</th><th>Gene</th><th>Hits</th></tr></thead>
+    <tbody><tr><td>No genes above threshold</td><td>NA</td><td>NA</td></tr></tbody>
+  </table>
+  {% endif %}
+</div>
+
+<!-- ════════════════════ KMA / RESFINDER RAW HITS ════════════════════ -->
+{% if kma_hits %}
+<div class="section">
+  <div class="section-title">KMA / ResFinder Fallback AMR Genes</div>
+  <p style="font-size: 8pt; color: #555; margin-bottom: 6px;">KMA/ResFinder analysis detected the following AMR genes from raw reads.</p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Gene</th><th>Identity (%)</th><th>Coverage (%)</th><th>Depth</th></tr>
+    </thead>
+    <tbody>
+    {% for h in kma_hits %}
+      <tr>
+        <td>{{ h.gene }}</td>
+        <td>{{ "%.1f"|format(h.identity) }}</td>
+        <td>{{ "%.1f"|format(h.coverage_pct) }}</td>
+        <td>{{ "%.1f"|format(h.depth) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ════════════════════ KMA ML HOST LINKAGE ════════════════════ -->
+{% if linked_predictions %}
+<div class="section page-break">
+  <div class="section-title">Read-Based AMR Fallback (ML Host Linkage)</div>
+  <p style="font-size: 8pt; color: #555; margin-bottom: 6px;">The following raw-read AMR genes were mathematically linked to host genomes via Gaussian depth clustering. Only linkages with a non-zero precision score are shown.</p>
+  <table class="data-table">
+    <colgroup>
+      <col style="width: 25%;">
+      <col style="width: 50%;">
+      <col style="width: 25%;">
+    </colgroup>
+    <thead>
+      <tr><th>Gene</th><th>Predicted Host (ML Linkage)</th><th>Precision Score</th></tr>
+    </thead>
+    <tbody>
+    {% for p in linked_predictions if p.kma_precision_score > 0 %}
+      <tr>
+        <td>{{ p.gene }}</td>
+        <td class="organism-name" style="font-weight: 700;">{{ p.predicted_host }}</td>
+        <td>{{ "%.2f"|format(p.kma_precision_score) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3" style="text-align:center; color:#666;">No high-confidence host linkages (all precision scores were 0).</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ════════════════════ KMA STATUS (when nothing to show) ════════════════════ -->
+{% if not kma_hits and not linked_predictions %}
+<div class="section">
+  <div class="section-title">KMA / ResFinder Analysis</div>
+  <p style="font-size: 9pt; color: #666; text-align: center; padding: 20px;">
+    {% if kma_status == "skipped" %}
+      KMA/ResFinder analysis was skipped due to sufficient coverage for contig-based AMR prediction.
+    {% elif kma_status == "no_hits" %}
+      KMA/ResFinder analysis was performed but no significant AMR hits were detected.
+    {% elif kma_status == "failed" %}
+      KMA/ResFinder analysis encountered an error and could not be completed.
+    {% else %}
+      KMA/ResFinder analysis data is not available.
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+
+<!-- ════════════════════ BINNED AMR GENES ════════════════════ -->
+{% if bin_amr and bin_amr.bin_amr_hits %}
+<div class="section page-break">
+  <div class="section-title">Binned AMR Genes</div>
+  <p style="font-size:8pt; color:#555; margin-bottom:5px;">
+    {{ bin_amr.bin_amr_hits | length }} AMR gene(s) across
+    {{ bin_amr.bins_with_amr or '?' }} bin(s).
+    {% if bin_amr.unbinned_amr_hits and bin_amr.unbinned_amr_hits > 0 %}
+    <span style="color:#c0392b;">{{ bin_amr.unbinned_amr_hits }} hit(s) unbinned.</span>
+    {% endif %}
+    ✔ = detected by both tools.
+  </p>
+  <table class="bin-amr-table">
+    <colgroup>
+      <col class="c-gene"><col class="c-bin"><col class="c-organism">
+      <col class="c-resist"><col class="c-id"><col class="c-cov">
+      <col class="c-comp"><col class="c-contam"><col class="c-src"><col class="c-hc">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Gene</th><th>Bin</th><th>Organism</th>
+        <th>Resistance</th><th>Id%</th><th>Cov%</th>
+        <th>Comp%</th><th>Cntm%</th><th>Source(s)</th><th>✔</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for h in bin_amr.bin_amr_hits %}
+      <tr>
+        <td title="{{ h.gene }}">{{ h.gene }}</td>
+        <td title="{{ h.bin }}">{{ h.bin }}</td>
+        <td title="{{ h.organism }}"><span class="organism-name">{{ h.organism }}</span></td>
+        <td title="{{ h.resistance }}">{{ h.resistance }}</td>
+        <td>{% if h.identity %}{{ "%.1f"|format(h.identity|float) }}{% else %}—{% endif %}</td>
+        <td>{% if h.coverage %}{{ h.coverage }}{% else %}—{% endif %}</td>
+        <td>{{ h.bin_completeness }}</td>
+        <td>{{ h.bin_contamination }}</td>
+        <td title="{{ h.source | join(',') }}">{{ h.source | join(',') }}</td>
+        <td>{% if h.high_confidence %}<span class="hc-yes">✔</span>{% else %}<span class="hc-no">–</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+  <!-- ──────────────────── PLASMIDS ──────────────────── -->
+  {% if plasmids and plasmids.count > 0 %}
+  <div class="section">
+    <div class="section-title">Plasmid Reconstruction (MOB-suite) — {{ plasmids.count }} plasmid(s) detected</div>
+    {% if plasmids.typed_plasmids %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Plasmid ID</th>
+          <th>Size (bp)</th>
+          <th>Replicon Type</th>
+          <th>Mobility Risk</th>
+          <th>Closest Reference Organism</th>
+          <th>Host Bin</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in plasmids.typed_plasmids %}
+        <tr>
+          <td style="font-size:8pt; font-family:monospace;">{{ p.id }}</td>
+          <td>{{ p.size if p.size else "—" }}</td>
+          <td>{{ p.rep_type if p.rep_type != "-" else "Unknown" }}</td>
+          <td>
+            {% if p.mobility == "conjugative" %}
+              <span class="dot dot-red"></span> Conjugative
+            {% elif p.mobility == "mobilizable" %}
+              <span class="dot dot-yellow"></span> Mobilizable
+            {% else %}
+              <span class="dot dot-grey"></span> Non-mobilizable
+            {% endif %}
+          </td>
+          <td class="organism-name">{{ p.mash_organism if p.mash_organism else "—" }}</td>
+          <td style="font-weight: bold; color: #003366;">{{ p.bin if p.bin else "unbinned" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div style="font-size:8pt; color:#555; margin-top:6px;">
+      <b>Mobility key:</b>
+      <span class="dot dot-red" style="vertical-align:middle;"></span> Conjugative = can self-transfer (highest spread risk) &nbsp;
+      <span class="dot dot-yellow" style="vertical-align:middle;"></span> Mobilizable = can transfer with helper plasmid &nbsp;
+      <span class="dot dot-grey" style="vertical-align:middle;"></span> Non-mobilizable = cannot transfer horizontally
+    </div>
+    {% else %}
+    <table class="info-table">
+      <tr>
+        <td class="label">Plasmids detected</td><td class="value">{{ plasmids.count }}</td>
+        <td class="label">Sizes (bp)</td><td class="value">{{ plasmids.lengths | join(", ") }}</td>
+      </tr>
+    </table>
+    {% endif %}
+  </div>
+  {% endif %}
+
+<!-- ════════════════════ WARNINGS ════════════════════ -->
+{% if warnings %}
+<div class="section">
+  <div class="section-title">Warnings</div>
+  {% for w in warnings %}
+  <div class="warning-box">{{ w }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
+<div class="footer">
+  Generated by Respiratory Metagenomics Pipeline ({{ pipeline_version }}) &bull; {{ generated_at }}
+</div>
+
+</body>
+</html>
