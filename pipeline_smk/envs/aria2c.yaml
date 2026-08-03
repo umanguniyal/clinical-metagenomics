@@ -1,0 +1,4 @@
+name: aria2c
+channels: [conda-forge]
+dependencies:
+  - aria2
