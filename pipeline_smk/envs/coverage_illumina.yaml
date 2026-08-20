@@ -1,7 +1,0 @@
-name: coverage_illumina
-channels: [conda-forge, bioconda]
-dependencies:
-  - python=3.11
-  - bowtie2
-  - samtools
-  - metabat2

@@ -1,7 +1,0 @@
-name: nanoqc
-channels: [conda-forge, bioconda]
-dependencies:
-  - nanoplot
-  - nanostat
-  - chopper
-  - python=3.11
