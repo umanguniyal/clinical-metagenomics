@@ -1,0 +1,9 @@
+name: quast
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Quast is most reliably solved with an older Python stack on bioconda.
+  - python=3.9
+  - quast=5.2.*

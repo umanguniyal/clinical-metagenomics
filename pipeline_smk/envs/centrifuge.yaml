@@ -1,0 +1,4 @@
+name: centrifuge
+channels: [conda-forge, bioconda]
+dependencies:
+  - centrifuge

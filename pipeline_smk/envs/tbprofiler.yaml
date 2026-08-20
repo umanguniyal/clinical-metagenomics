@@ -1,0 +1,5 @@
+name: tbprofiler
+channels: [conda-forge, bioconda]
+dependencies:
+  - tb-profiler
+  - python=3.11
