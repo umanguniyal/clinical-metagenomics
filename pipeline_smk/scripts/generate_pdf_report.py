@@ -57,9 +57,20 @@ def prepare_context(report):
             "c_pct": c_dict.get(sp)
         })
     
+    # Triage Lists
+    bioinfo_triage_lists = report.get("bioinfo_triage_lists", {})
+    ctx["bioinfo_triage_lists"] = bioinfo_triage_lists
+    
+    triage_orgs = set()
+    for item in bioinfo_triage_lists.get("susceptible_pathogens", []):
+        triage_orgs.add(item.get("organism"))
+    for item in bioinfo_triage_lists.get("amr_associated_threats", []):
+        triage_orgs.add(item.get("organism"))
+
     merged_tax = [
         x for x in merged_tax 
-        if (x["k_pct"] is not None and x["k_pct"] >= 0.5) or 
+        if (x["name"] in triage_orgs) or
+           (x["k_pct"] is not None and x["k_pct"] >= 0.5) or 
            (x["c_pct"] is not None and x["c_pct"] >= 0.5)
     ]
     
@@ -116,7 +127,6 @@ def prepare_context(report):
     ctx["bin_amr"] = bin_amr_data
 
     # Triage Lists
-    ctx["bioinfo_triage_lists"] = report.get("bioinfo_triage_lists", {})
 
     # Contamination flags from QC crosscheck (Phase 4)
     ctx["contamination_flags"] = report.get("contamination_flags", [])
